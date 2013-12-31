@@ -2,7 +2,12 @@
 
 file=$1
 logfile="$file".log
-transmission-cli --portmap --port 52970 "$file" > "$logfile" 2>&1 &
+port=52970
+if [ "$2" != "" ]; then
+	port=$2
+fi
+
+transmission-cli --portmap --port $port "$file" > "$logfile" 2>&1 &
 sleep 1
 tail -f "$logfile" &
 sleep 1
