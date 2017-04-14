@@ -13,5 +13,5 @@ if __name__ == "__main__":
 	html = re.sub(r'<br>', r'<br/>', html)
 	html = re.sub(r'<\?xml[^>]+>', r'', html)
 	html = re.sub(r'<!--.*-->', r'', html)
-	soup = BeautifulSoup(html, from_encoding='utf-8')
-	print soup.prettify()
+	soup = BeautifulSoup(html, 'html.parser')
+	print(soup.prettify())
