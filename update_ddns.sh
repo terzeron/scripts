@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # read config
-id=$(jq -r '.id' update_ddns.sh.passwd)
-passwd=$(jq -r '.password' update_ddns.sh.passwd)
+credential_file=update_ddns.passwd.json
+id=$(jq -r '.id' $credential_file)
+passwd=$(jq -r '.password' $credential_file)
 
 # host list
 host_list="terzeron.com mail.terzeron.com"
