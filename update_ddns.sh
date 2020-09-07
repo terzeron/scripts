@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # read config
-credential_file=update_ddns.passwd.json
+credential_file=$(dirname $0)/update_ddns.passwd.json
 id=$(jq -r '.id' $credential_file)
 passwd=$(jq -r '.password' $credential_file)
 
@@ -20,7 +20,7 @@ cd $HOME/logs
 current_logfile="myip.log.current"
 previous_logfile="myip.log"
 curl -s https://ipinfo.io/ip > $current_logfile
-diff $current_logfile $previous_logfile || \
+diff $current_logfile $previous_logfile && echo "no change" || \
     ( \
       echo updating; \
       curl -u $id:$passwd -g "http://dyna.dnsever.com/update.php${host_param_str}"; \
