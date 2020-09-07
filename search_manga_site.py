@@ -50,7 +50,10 @@ def extract_sub_content_by_attrs(search_url: str, content: str, attrs: Dict[str,
             #LOGGER.debug(e)
             m = re.search(r'<a[^>]*href="(?P<link>[^"]+)"[^>]*>', str(e))
             if m:
-                link = URL.concatenate_url(search_url, m.group("link"))
+                if m.group("link").startswith("http"):
+                    link = m.group("link")
+                else:
+                    link = URL.concatenate_url(search_url, m.group("link"))
 
             e = re.sub(r'<!--.*-->', '', str(e))
             e = re.sub(r'</(?:p|span|h6|a|div)>', '\n', e)
