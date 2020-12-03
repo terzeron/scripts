@@ -54,6 +54,7 @@ def extract_sub_content_by_attrs(search_url: str, content: str, attrs: Dict[str,
                     link = m.group("link")
                 else:
                     link = URL.concatenate_url(search_url, m.group("link"))
+                link = re.sub(r'&amp;', '&', link)
 
             e = re.sub(r'<!--.*-->', '', str(e))
             e = re.sub(r'</(?:p|span|h6|a|div)>', '\n', e)
@@ -82,15 +83,15 @@ def search_site(site_name: str, url_postfix: str, attrs: Dict[str, str], method=
 def main():
     keyword = urllib.parse.quote(sys.argv[1])
     keyword_cp949 = sys.argv[1].encode("cp949")
-    
+
     search_site("funbe", "/bbs/search.php?stx=" + keyword, {"class": "section-item-title"})
     search_site("jmana", "/comic_main_frame?keyword=" + keyword, {"path": '//*[@id="wrapCont"]/div/ul/li'})
     search_site("ornson", "/search?skeyword=" + keyword, {"class": "tag_box"})
-    search_site("newtoki", "/bbs/search.php?stx=" + keyword, {"class": "media-heading"})
-    search_site("copytoon", "/bbs/search_webtoon.php?stx=" + keyword, {"class": "section-item-title"})
+    search_site("manatoki", "/bbs/search.php?stx=" + keyword, {"class": "media-heading"})
+    #search_site("copytoon", "/bbs/search_webtoon.php?stx=" + keyword, {"class": "section-item-title"})
     search_site("wfwf", "/search.html?q=" + urllib.parse.quote(keyword_cp949), {"class": "searchLink"})
     search_site("wtwt", "/sh", {"path": '/html/body/section/div/div[2]/div/div[3]/ul/li'}, method=Method.POST, headers={"Content-Type": "application/x-www-form-urlencoded"}, data={"search_txt": keyword_cp949})
-    
+
     config = json.load(open(os.path.join(os.environ["FEED_MAKER_WORK_DIR"], "marumaru", "site_config.json")))
     domain = URL.get_url_domain(config["url"])
     search_site("marumaru", "/bbs/search.php?url=https%3A%2F%2F" + domain + "%2Fbbs%2Fsearch.php&stx=" + keyword, {"class": "media-heading"})

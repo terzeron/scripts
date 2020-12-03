@@ -33,7 +33,7 @@ def update_domain() -> bool:
         site_config = json.load(f)
         if site_config:
             if "url" in site_config:
-                new_url = re.sub(r'(?P<pre>https?://[\w\.]+\D)(?P<variant_postfix>\d+|\.\w+)(?P<post>(\.|/).*)', r'\g<pre>' + new_postfix + r'\g<post>', site_config["url"])
+                new_url = re.sub(r'(?P<pre>https?://[\w\.\-]+\D)(?P<variant_postfix>\d+|\.\w+)(?P<post>[^/]*)', r'\g<pre>' + new_postfix + r'\g<post>', site_config["url"])
             else:
                 print("no url in site config")
                 return False
@@ -42,11 +42,11 @@ def update_domain() -> bool:
         site_config["url"] = new_url
         json.dump(site_config, f, ensure_ascii=False)
 
-    print("- git add & commit")
-    cmd: str = "git add %s; git commit -m 'modify site url'" % site_config_file
-    _, error = exec_cmd(cmd)
+    print("- git add")
+    git_cmd: str = "git add %s" % site_config_file
+    _, error = exec_cmd(git_cmd)
     if error:
-        LOGGER.error("can't git add '%s' & commit, %s", site_config_file, error)
+        LOGGER.error("can't execute a command '%s', %s", git_cmd, error)
 
     # update config files of all feeds which belongs to the site
     for entry in os.listdir("."):
@@ -68,7 +68,7 @@ def update_domain() -> bool:
         os.rename(temp_conf_file, conf_file)
 
         print(".", end='')
-        git_cmd: str = "git add %s; git commit -m 'modify site url'" % conf_file
+        git_cmd: str = "git add %s" % conf_file
         _, error = exec_cmd(git_cmd)
         if error:
             LOGGER.error("can't execute a command '%s', %s", git_cmd, error)
@@ -86,6 +86,12 @@ def update_domain() -> bool:
         except FileNotFoundError:
             pass
         print("")
+
+    print("- git commit")
+    git_cmd: str = "git commit -m 'modify site url'"
+    _, error = exec_cmd(git_cmd)
+    if error:
+        LOGGER.error("can't execute a command '%s', %s", git_cmd, error)
 
     return True
 
