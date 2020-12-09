@@ -65,7 +65,7 @@ def get_location(headers: Dict[str, Any]):
     return new_url
 
 
-def spider(url: str, config: Dict[str, Any], post: str) -> str:
+def spider(url: str, config: Dict[str, Any]) -> str:
     LOGGER.debug("# spider(url=%s, config=%r)", url, config)
     do_send = False
     new_url = ""
@@ -75,7 +75,7 @@ def spider(url: str, config: Dict[str, Any], post: str) -> str:
     LOGGER.debug("response=%s, response_headers=%r", response, response_headers)
     if response != "200":
         if response_headers:
-            new_url = get_location(response_headers) + post
+            new_url = get_location(response_headers)
         do_send = True
     print("spidering end")
     return do_send, new_url
@@ -103,9 +103,6 @@ def get(url: str, config: Dict[str, Any]) -> Tuple[bool, str, str]:
         if config["keyword"] not in response:
             print("no keyword")
             do_send = True
-        if len(response) <= 10240:
-            print("too small response")
-            do_send = True
         if URL.get_url_domain(url) not in response:
             print("old url not found")
             do_send = True
@@ -113,14 +110,15 @@ def get(url: str, config: Dict[str, Any]) -> Tuple[bool, str, str]:
     return do_send, response, new_url
     
 
-def get_new_url(url: str, response: str, new_pattern: str, pre: str, post: str) -> str:
-    LOGGER.debug("# get_new_url(url=%s, response, new_pattern=%s, pre=%s, post=%s)", url, new_pattern, pre, post)
+def get_new_url(url: str, response: str, new_pattern: str, pre: str, domain_postfix: str, post: str) -> str:
+    LOGGER.debug("# get_new_url(url=%s, response, new_pattern=%s, pre=%s, domain_postfix=%s, post=%s)", url, new_pattern, pre, domain_postfix, post)
     new_url: str = ""
     # try to find similar url
     url_count_map: Dict[str, int] = {}
     matches = re.findall(new_pattern, str(response))
     for match in matches:
-        new_url = pre + match + post
+        new_url = pre + match + domain_postfix + post
+        LOGGER.debug("new_url=%s", new_url)
         if new_url in url_count_map:
             url_count_map[new_url] += 1
         else:
@@ -139,6 +137,7 @@ def get_url_pattern(url: str) -> Tuple[str, str, str]:
     LOGGER.debug("# get_url_pattern(url=%s)", url)
     new_pattern: str = ""
     pre: str = ""
+    domain_postfix: str = ""
     post: str = ""
     m1 = re.search(r'(?P<pre>https?://[\w\.\-]+\D)(?P<num>\d+)(?P<domain_postfix>[^/]+)(?P<post>.*)', url)
     m2 = re.search(r'(?P<pre>https?://[\w\.\-]+)\.[^/]+(?P<post>.*)', url)
@@ -147,14 +146,14 @@ def get_url_pattern(url: str) -> Tuple[str, str, str]:
             pre = m1.group("pre")
             domain_postfix = m1.group("domain_postfix")
             post = m1.group("post")
-            new_pattern = pre + '(\d+)' + domain_postfix + post
+            new_pattern = pre + '(\d+)' + domain_postfix + '(?:' + post + ')?'
             LOGGER.debug("first pattern: %s, %s, %s, %s", pre, domain_postfix, post, new_pattern)
         elif m2:
             pre = m2.group("pre")
             post = m2.group("post")
             new_pattern = pre + '(\.[^/]+)' + post
             LOGGER.debug("second pattern: %s, %s, %s", pre, post, new_pattern)
-    return new_pattern, pre, post
+    return new_pattern, pre, domain_postfix, post
 
             
 def main() -> int:
@@ -172,10 +171,10 @@ def main() -> int:
     url = config["url"]
     print("url=%s" % url)
 
-    new_pattern, pre, post = get_url_pattern(url)
+    new_pattern, pre, domain_postfix, post = get_url_pattern(url)
     
     if not config["render_js"]:
-        do_send, new_url = spider(url, config, post)
+        do_send, new_url = spider(url, config)
         if do_send:
             send_alarm(url, new_url)
             return -1
@@ -183,7 +182,7 @@ def main() -> int:
     do_send, response, new_url = get(url, config)
     if do_send:
         if not new_url:
-            new_url = get_new_url(url, response, new_pattern, pre, post)
+            new_url = get_new_url(url, response, new_pattern, pre, domain_postfix, post)
         if url != new_url:
             send_alarm(url, new_url)
             return -1
