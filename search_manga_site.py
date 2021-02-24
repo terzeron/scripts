@@ -54,21 +54,25 @@ def extract_sub_content_by_attrs(search_url: str, content: str, attrs: Dict[str,
                 if m.group("link").startswith("http"):
                     link = m.group("link")
                 else:
+                    # jmana의 경우 버그
                     link = URL.concatenate_url(search_url, m.group("link"))
                 link = re.sub(r'&amp;', '&', link)
 
             e = re.sub(r'<!--.*-->', '', str(e))
             e = re.sub(r'</(?:p|span|h6|a|div)>', '\n', e)
             #e = re.sub(r'<img[^>]*>', '\n', e)
-            e = re.sub(r'(/액(?!션)|/?(액션|판타지|무협|미분류|단편|완결|단행본|월간|격주))', '', e)
+            e = re.sub(r'(만화제목|작가이름|발행검색|초성검색|장르검색|정렬|검색 결과|나의 댓글 반응|공지사항|북마크업데이트|북마크|주간랭킹 TOP30|나의 글 반응|오늘|한달 전|주간|격주|월간|단행본|단편|완결)', '', e)
+            e = re.sub(r'(/액(?!션)|/?(액션|판타지|무협|미분류|단편|완결|단행본|월간|격주|연재))', '', e)
             e = re.sub(r'</?\w+(\s*[\w\-_]+="[^"]*")*/?>', '', e)
             e = re.sub(r'.*\b\d+(화|권|부|편).*', '', e)
-            e = re.sub(r'^\s+', '', e)
+            e = re.sub(r'\#\[\]', '', e)
+            e = re.sub(r'^(\s|\n)+', '', e)
             e = re.sub(r'\s+$', '\n', e)
             e = re.sub(r'(\s+\n)+', '\n', e)
             if not re.search(r'^\s*$', e):
-                title = title + e
-            result_list.append((title, link))
+                title = e
+            if title and link:
+                result_list.append((title, link))
 
     return result_list
 
@@ -87,10 +91,10 @@ def main():
     keyword = urllib.parse.quote(sys.argv[1])
     keyword_cp949 = sys.argv[1].encode("cp949")
 
-    search_site("funbe", "/bbs/search.php?stx=" + keyword, {"class": "section-item-title"})
-    search_site("jmana", "/comic_main_frame?keyword=" + keyword, {"path": '//*[@id="wrapCont"]/div/ul/li'})
+    #search_site("funbe", "/bbs/search.php?stx=" + keyword, {"class": "section-item-title"})
+    search_site("jmana", "/comic_list?keyword=" + keyword, {"class": "tit"})
     search_site("ornson", "/search?skeyword=" + keyword, {"class": "tag_box"})
-    search_site("manatoki", "/bbs/search.php?stx=" + keyword, {"class": "media-heading"})
+    search_site("manatoki", "/comic?stx=" + keyword, {"class": "list-item"})
     search_site("copytoon", "/bbs/search_webtoon.php?stx=" + keyword, {"class": "section-item-title"})
     search_site("wfwf", "/search.html?q=" + urllib.parse.quote(keyword_cp949), {"class": "searchLink"})
     search_site("wtwt", "/sh", {"path": '/html/body/section/div/div[2]/div/div[3]/ul/li'}, method=Method.POST, headers={"Content-Type": "application/x-www-form-urlencoded"}, data={"search_txt": keyword_cp949})
