@@ -59,7 +59,7 @@ def update_domain() -> bool:
         temp_conf_file = conf_file + ".temp"
         ofile = open(temp_conf_file, "w")
         for line in ifile:
-            m = re.search(r'(?P<pre><list_url><!\[CDATA\[https?://[\w\.]+\D)(?P<variant_postfix>\d+|\.\w+)(?P<post>(\.|/).*]]></list_url>)', line)
+            m = re.search(r'(?P<pre><list_url><!\[CDATA\[https?://[\w\.\-]+\D)(?P<variant_postfix>\d+|\.\w+)(?P<post>(\.|/).*]]></list_url>)', line)
             if m:
                 line = "            " + m.group("pre") + new_postfix + m.group("post") + "\n"
             ofile.write(line)
