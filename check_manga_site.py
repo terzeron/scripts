@@ -76,6 +76,8 @@ def spider(url: str, config: Dict[str, Any]) -> str:
     if response != "200":
         if response_headers:
             new_url = get_location(response_headers)
+            if new_url.startswith("//"):
+                new_url = URL.get_url_scheme(url) + ":" + new_url
         do_send = True
     print("spidering end")
     return do_send, new_url
