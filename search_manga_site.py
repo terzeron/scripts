@@ -36,11 +36,12 @@ def get_data_from_site(config, url_postfix, method=Method.GET, headers={}, data=
 
 
 def extract_sub_content_by_attrs(search_url: str, content: str, attrs: Dict[str, str]) -> List[Tuple[str, str]]:
-    LOGGER.debug("# extract_sub_content_by_attrs(search_url=%s, content=%s, attrs=%r)", search_url, content, attrs)
+    LOGGER.debug("# extract_sub_content_by_attrs(search_url=%s, attrs=%r)", search_url, attrs)
     soup = BeautifulSoup(content, "html.parser")
     for key in attrs.keys():
         if key in ("id", "class"):
             content = soup.find_all(attrs={key: attrs[key]})
+            LOGGER.debug("content=", content)
         elif key == "path":
             content = HTMLExtractor.get_node_with_path(soup.body, attrs[key])
 
@@ -54,7 +55,6 @@ def extract_sub_content_by_attrs(search_url: str, content: str, attrs: Dict[str,
                 if m.group("link").startswith("http"):
                     link = m.group("link")
                 else:
-                    # jmana의 경우 버그
                     link = URL.concatenate_url(search_url, m.group("link"))
                 link = re.sub(r'&amp;', '&', link)
 
@@ -64,7 +64,8 @@ def extract_sub_content_by_attrs(search_url: str, content: str, attrs: Dict[str,
             e = re.sub(r'(만화제목|작가이름|발행검색|초성검색|장르검색|정렬|검색 결과|나의 댓글 반응|공지사항|북마크업데이트|북마크|주간랭킹 TOP30|나의 글 반응|오늘|한달 전|주간|격주|월간|단행본|단편|완결)', '', e)
             e = re.sub(r'(/액(?!션)|/?(액션|판타지|무협|미분류|단편|완결|단행본|월간|격주|연재))', '', e)
             e = re.sub(r'</?\w+(\s*[\w\-_]+="[^"]*")*/?>', '', e)
-            e = re.sub(r'.*\b\d+(화|권|부|편).*', '', e)
+            if "jmana" not in search_url:
+                e = re.sub(r'.*\b\d+(화|권|부|편).*', '', e)
             e = re.sub(r'\#\[\]', '', e)
             e = re.sub(r'^(\s|\n)+', '', e)
             e = re.sub(r'\s+$', '\n', e)
@@ -72,7 +73,7 @@ def extract_sub_content_by_attrs(search_url: str, content: str, attrs: Dict[str,
             if not re.search(r'^\s*$', e):
                 title = e
             if title and link:
-                result_list.append((title, link))
+                result_list.append((title, urllib.parse.unquote(link)))
 
     return result_list
 
