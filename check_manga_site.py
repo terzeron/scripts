@@ -72,7 +72,7 @@ def spider(url: str, config: Dict[str, Any]) -> str:
     print("spidering start")
     crawler = Crawler(method=Method.HEAD, headers=config["headers"])
     response, response_headers = crawler.run(url)
-    LOGGER.debug("response=%s, response_headers=%r", response, response_headers)
+    #LOGGER.debug("response=%s, response_headers=%r", response, response_headers)
     if response != "200":
         if response_headers:
             new_url = get_location(response_headers)
