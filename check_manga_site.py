@@ -20,16 +20,17 @@ def send_alarm(url: str, new_url: str) -> int:
     LOGGER.debug("# send_alarm(url=%s, new_url=%s)", url, new_url)
     print("alarming start")
     ret = 0
-    cmd = "send_msg_to_line.sh 'no service from %s'" % url
+    msg = "no service from %s" % url
     _, error = exec_cmd(cmd)
     if error:
         print("can't execute a command '%s'" % cmd)
         return -1
-    cmd = "send_msg_to_line.sh 'would you check the new site? %s'" % new_url
+    msg = msg + "\nwould you check the new site? %s" % new_url
     _, error = exec_cmd(cmd)
     if error:
         print("can't execute a command '%s'" % cmd)
         ret = -1
+    cmd = "send_msg_to_gmail.sh '%s'" % msg
     print("alarming end")
     return ret
 
