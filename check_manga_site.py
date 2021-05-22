@@ -73,7 +73,7 @@ def spider(url: str, config: Dict[str, Any]) -> str:
     print("spidering start")
     crawler = Crawler(method=Method.HEAD, headers=config["headers"])
     response, response_headers = crawler.run(url)
-    LOGGER.debug("response=%s, response_headers=%r", response, response_headers)
+    #LOGGER.debug("response=%s, response_headers=%r", response, response_headers)
     if response != "200":
         if response_headers:
             new_url = get_location(response_headers)
@@ -93,7 +93,7 @@ def get(url: str, config: Dict[str, Any]) -> Tuple[bool, str, str]:
     response_headers = None
     crawler = Crawler(method=Method.GET, num_retries=config["num_retries"], render_js=config["render_js"], encoding=config["encoding"], headers=config["headers"], timeout=config["timeout"])
     response, response_headers = crawler.run(url)
-    LOGGER.debug("response=%s, response_headers=%r", response, response_headers)
+    #LOGGER.debug("response=%s, response_headers=%r", response, response_headers)
     if response_headers:
         new_url = get_location(response_headers)
         if new_url:

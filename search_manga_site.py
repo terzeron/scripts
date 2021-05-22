@@ -41,7 +41,7 @@ def extract_sub_content_by_attrs(search_url: str, content: str, attrs: Dict[str,
     for key in attrs.keys():
         if key in ("id", "class"):
             content = soup.find_all(attrs={key: attrs[key]})
-            LOGGER.debug("content=", content)
+            LOGGER.debug(content)
         elif key == "path":
             content = HTMLExtractor.get_node_with_path(soup.body, attrs[key])
 
