@@ -21,7 +21,7 @@ def send_alarm(url: str, new_url: str) -> int:
     print("alarming start")
     ret = 0
     msg = "no service from %s\nwould you check the new site? %s" % (url, new_url)
-    cmd = "send_msg_to_gmail.sh '%s'" % msg
+    cmd = "send_msg_to_gmail.sh -s 'check_manga_site.py' '%s'" % msg
     _, error = exec_cmd(cmd)
     if error:
         print("can't execute a command '%s'" % cmd)
