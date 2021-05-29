@@ -7,24 +7,16 @@ BACKUP_NAME=config
 BACKUP_DIR="$HOME/googledrive/googledrive/backup"
 
 date_str=`date +"%y%m%d"`
-backup_file=${WORK_DIR}/${BACKUP_NAME}.${date_str}.tar
+backup_file=${WORK_DIR}/${BACKUP_NAME}.${date_str}.tar.bz2
 
 date
 
-for dir in /etc/apache2 /etc/php /etc/samba /etc/letsencrypt /etc/mysql /etc/ssh /opt/atlassian/confluence/conf /etc/libapache2-mod-jk; do
-    cd ${dir}
-    pwd
+cd /
 
-    [ -e "${backup_file}" ] && \
-        (echo appending; tar --append --file=${backup_file} * > /dev/null) || \
-    [ -e "${backup_file}" ] || \
-        (echo creating; tar cvf ${backup_file} * > /dev/null)
-done
-
-echo "### compressing ###"
-bzip2 ${backup_file}
+echo "### making the backup file ###"
+tar cvfj ${backup_file} /etc > /dev/null
 
 echo "### moving the backup file to storage ###"
-sudo -u terzeron mv "${backup_file}".bz2 "${BACKUP_DIR}"
+sudo -u terzeron mv "${backup_file}" "${BACKUP_DIR}"
 
 date
