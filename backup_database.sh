@@ -31,7 +31,7 @@ function backup() {
 }
 
 backup "terzeron" $id $passwd
-backup "confluence" $id $passwd
+#backup "confluence" $id $passwd
 backup "rssextend" $id $passwd
 backup "mysql" $root_id $root_passwd
 
