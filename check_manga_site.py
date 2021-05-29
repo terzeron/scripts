@@ -20,12 +20,8 @@ def send_alarm(url: str, new_url: str) -> int:
     LOGGER.debug("# send_alarm(url=%s, new_url=%s)", url, new_url)
     print("alarming start")
     ret = 0
-    cmd = "send_msg_to_line.sh 'no service from %s'" % url
-    _, error = exec_cmd(cmd)
-    if error:
-        print("can't execute a command '%s'" % cmd)
-        return -1
-    cmd = "send_msg_to_line.sh 'would you check the new site? %s'" % new_url
+    msg = "no service from %s\nwould you check the new site? %s" % (url, new_url)
+    cmd = "send_msg_to_gmail.sh '%s'" % msg
     _, error = exec_cmd(cmd)
     if error:
         print("can't execute a command '%s'" % cmd)
@@ -169,25 +165,33 @@ def main() -> int:
 
     config = read_config(site_config_file)
     if not config:
+        print("can't read configuration file '%s'" % site_config_file)
         return -1
     url = config["url"]
     print("url=%s" % url)
+
+    try:
+        os.remove("cookies.json")
+    except FileNotFoundError:
+        pass
 
     new_pattern, pre, domain_postfix, post = get_url_pattern(url)
     
     if not config["render_js"]:
         do_send, new_url = spider(url, config)
         if do_send:
+            print("can't get access to url '%s'" % url)
             send_alarm(url, new_url)
-            return -1
+            return 0
         
     do_send, response, new_url = get(url, config)
     if do_send:
         if not new_url:
             new_url = get_new_url(url, response, new_pattern, pre, domain_postfix, post)
         if url != new_url:
+            print("New url: '%s'" % new_url)
             send_alarm(url, new_url)
-            return -1
+            return 0
 
     print("Ok")
     return 0
