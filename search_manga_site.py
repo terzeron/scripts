@@ -43,15 +43,14 @@ def extract_sub_content_by_attrs(search_url: str, content: str, attrs: Dict[str,
     for key in attrs.keys():
         if key in ("id", "class"):
             content = soup.find_all(attrs={key: attrs[key]})
-            LOGGER.debug(content)
         elif key == "path":
             content = HTMLExtractor.get_node_with_path(soup.body, attrs[key])
+        LOGGER.debug(content)
 
         result_list = []
         title = ""
         link = ""
         for e in content:
-            LOGGER.debug(e)
             m = re.search(r'<a[^>]*href="(?P<link>[^"]+)"[^>]*>', str(e))
             if m:
                 if m.group("link").startswith("http"):
@@ -65,48 +64,50 @@ def extract_sub_content_by_attrs(search_url: str, content: str, attrs: Dict[str,
             # 주석 제거
             e = re.sub(r'<!--.*-->', '', str(e))
             # 단순(텍스트만 포함한) p 태그 제거
-            e = re.sub(r'<p\s*[^>]*>[^<]*</p>', '', e)
+            e = re.sub(r'<p[^>]*>[^<]*</p>', '', e)
             prev_e = e
             while True:
                 # 만화사이트에서 자주 보이는 불필요한 텍스트 제거
                 e = re.compile(r'''
-                    <\w+(\s*[\w\-_]+="[^"]*")*>
+                    <\w+[^>]*>
                     \s*
                     (
                     \s*
-                    [/+\-]?
+                    [/+\-★]?
                     \s*
                     (
                     만화제목|작가이름|(발행|초성|장르)검색|정렬|검색 결과|공지사항|북마크(업데이트)?|주간랭킹 TOP30|나의 댓?글 반응
                     |
-                    주간|격주|격월|월간|단행본|단편|완결|연재|정기|비정기
+                    주간|격주|격월|월간|단행본|단편|완결|연재|정기|비정기|월요일?|화요일?|수요일?|목요일?|금요일?|토요일?|일요일?
                     |
-                    액\b|액션|판타지|성인|무협|드라마|라노벨|개그|학원|BL|스토리|순정|로맨스|이세계|전생|일상|치유|애니화|백합|미분류
+                    액\b|액션|판타지|성인|무협|무장|드라마|라노벨|개그|학원|BL|스토리?|순정|로맨스|로매스|이세계|전생|일상|치유|애니|백합|미분류|시대극|투믹스|게임|카카오페|느와르|15금|18금|19금|가정부|BL|Bl|GL|일반|러브코미디|화
                     |
-                    오늘|어제|그제|(하루|이틀|사흘|(한|두|세)\s?(주|월|년)|\d+\s?일)\s?전
+                    오늘|어제|그제|(하루|이틀|사흘|(한|두|세|네)\s?(주|달)|(\d+|일|이|삼|사|오|육|칠)\s?(일|월|년))\s?전
                     |
-                    (webtoon|cartoon|movie)\d+
+                    (webtoon|cartoon|movie|drama)\d+
                     )
                     )+
                     \s*
                     </\w+>
                 ''', re.VERBOSE).sub('', e)
-                # 모든 html 태그 제거            
-                e = re.sub(r'</?\w+(\s*[\w\-_]+="[^"]*")*/?>', '', e) 
                 # 연속된 공백을 공백 1개로 교체
                 e = re.sub(r'\s+', ' ', e)
                 # #[] 제거
                 e = re.sub(r'\#\[\]', '', e)
-                # 행 처음에 연속하는 공백 제거
-                e = re.sub(r'^(\s|\n)+', '', e)
-                # 행 마지막에 연속하는 공백 제거
-                e = re.sub(r'(\s|\n)+$', '', e)
                 if prev_e == e:
                     break
                 prev_e = e
-                
+                 
             if "jmana" not in search_url:
                 e = re.sub(r'.*\b\d+(화|권|부|편).*', '', e)
+            # 모든 html 태그 제거            
+            e = re.sub(r'</?\w+(\s*[\w\-_]+="[^"]*")*/?>', '', e)
+            # #태그 제거
+            e = re.sub(r'\s*\#\S+', '', e)
+            # 행 처음에 연속하는 공백 제거
+            e = re.sub(r'^\s+', '', e)
+            # 행 마지막에 연속하는 공백 제거
+            e = re.sub(r'(\s|\n)+$', '', e)
             if not re.search(r'^\s*$', e):
                 title = e
 
