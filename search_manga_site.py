@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import re
+import getopt
 import urllib
 import logging
 import logging.config
@@ -32,6 +33,7 @@ def get_data_from_site(config, url_postfix, method=Method.GET, headers={}, data=
     c: Crawler = Crawler(render_js=render_js, method=method, headers=headers, encoding=encoding)
     url: str = url_prefix + url_postfix
     response, _ = c.run(url=url, data=data)
+    del c
     return response
 
 
@@ -46,10 +48,10 @@ def extract_sub_content_by_attrs(search_url: str, content: str, attrs: Dict[str,
             content = HTMLExtractor.get_node_with_path(soup.body, attrs[key])
 
         result_list = []
+        title = ""
+        link = ""
         for e in content:
-            title = ""
-            link = ""
-            #LOGGER.debug(e)
+            LOGGER.debug(e)
             m = re.search(r'<a[^>]*href="(?P<link>[^"]+)"[^>]*>', str(e))
             if m:
                 if m.group("link").startswith("http"):
@@ -57,23 +59,61 @@ def extract_sub_content_by_attrs(search_url: str, content: str, attrs: Dict[str,
                 else:
                     link = URL.concatenate_url(search_url, m.group("link"))
                 link = re.sub(r'&amp;', '&', link)
+                link = re.sub(r'&?cpa=\d+', '', link)
+                link = re.sub(r'&?stx=\d+', '', link)
 
+            # 주석 제거
             e = re.sub(r'<!--.*-->', '', str(e))
-            e = re.sub(r'</(?:p|span|h6|a|div)>', '\n', e)
-            #e = re.sub(r'<img[^>]*>', '\n', e)
-            e = re.sub(r'(만화제목|작가이름|발행검색|초성검색|장르검색|정렬|검색 결과|나의 댓글 반응|공지사항|북마크업데이트|북마크|주간랭킹 TOP30|나의 글 반응|오늘|한달 전|주간|격주|월간|단행본|단편|완결)', '', e)
-            e = re.sub(r'(/액(?!션)|/?(액션|판타지|무협|미분류|단편|완결|단행본|월간|격주|연재))', '', e)
-            e = re.sub(r'</?\w+(\s*[\w\-_]+="[^"]*")*/?>', '', e)
+            # 단순(텍스트만 포함한) p 태그 제거
+            e = re.sub(r'<p\s*[^>]*>[^<]*</p>', '', e)
+            prev_e = e
+            while True:
+                # 만화사이트에서 자주 보이는 불필요한 텍스트 제거
+                e = re.compile(r'''
+                    <\w+(\s*[\w\-_]+="[^"]*")*>
+                    \s*
+                    (
+                    \s*
+                    [/+\-]?
+                    \s*
+                    (
+                    만화제목|작가이름|(발행|초성|장르)검색|정렬|검색 결과|공지사항|북마크(업데이트)?|주간랭킹 TOP30|나의 댓?글 반응
+                    |
+                    주간|격주|격월|월간|단행본|단편|완결|연재|정기|비정기
+                    |
+                    액\b|액션|판타지|성인|무협|드라마|라노벨|개그|학원|BL|스토리|순정|로맨스|이세계|전생|일상|치유|애니화|백합|미분류
+                    |
+                    오늘|어제|그제|(하루|이틀|사흘|(한|두|세)\s?(주|월|년)|\d+\s?일)\s?전
+                    |
+                    (webtoon|cartoon|movie)\d+
+                    )
+                    )+
+                    \s*
+                    </\w+>
+                ''', re.VERBOSE).sub('', e)
+                # 모든 html 태그 제거            
+                e = re.sub(r'</?\w+(\s*[\w\-_]+="[^"]*")*/?>', '', e) 
+                # 연속된 공백을 공백 1개로 교체
+                e = re.sub(r'\s+', ' ', e)
+                # #[] 제거
+                e = re.sub(r'\#\[\]', '', e)
+                # 행 처음에 연속하는 공백 제거
+                e = re.sub(r'^(\s|\n)+', '', e)
+                # 행 마지막에 연속하는 공백 제거
+                e = re.sub(r'(\s|\n)+$', '', e)
+                if prev_e == e:
+                    break
+                prev_e = e
+                
             if "jmana" not in search_url:
                 e = re.sub(r'.*\b\d+(화|권|부|편).*', '', e)
-            e = re.sub(r'\#\[\]', '', e)
-            e = re.sub(r'^(\s|\n)+', '', e)
-            e = re.sub(r'\s+$', '\n', e)
-            e = re.sub(r'(\s+\n)+', '\n', e)
             if not re.search(r'^\s*$', e):
                 title = e
+
             if title and link:
                 result_list.append((title, urllib.parse.unquote(link)))
+                link = ""
+                title = ""
 
     return result_list
 
@@ -87,25 +127,44 @@ def search_site(site_name: str, url_postfix: str, attrs: Dict[str, str], method=
     print_content(site_name, result_list)
 
 
+def get_marumaru_site_domain():
+    marumaru_site_config = json.load(open(os.path.join(os.environ["FEED_MAKER_WORK_DIR"], "marumaru", "site_config.json")))
+    return URL.get_url_domain(marumaru_site_config["url"])
+
+    
 def main():
     LOGGER.debug("# main()")
-    keyword = urllib.parse.quote(sys.argv[1])
-    keyword_cp949 = sys.argv[1].encode("cp949")
 
-    #search_site("funbe", "/bbs/search.php?stx=" + keyword, {"class": "section-item-title"})
-    search_site("jmana", "/comic_list?keyword=" + keyword, {"class": "tit"})
-    search_site("ornson", "/search?skeyword=" + keyword, {"class": "tag_box"})
-    search_site("manatoki", "/comic?stx=" + keyword, {"class": "list-item"})
-    search_site("copytoon", "/bbs/search_webtoon.php?stx=" + keyword, {"class": "section-item-title"})
-    search_site("wfwf", "/search.html?q=" + urllib.parse.quote(keyword_cp949), {"class": "searchLink"})
-    search_site("wtwt", "/sh", {"path": '/html/body/section/div/div[2]/div/div[3]/ul/li'}, method=Method.POST, headers={"Content-Type": "application/x-www-form-urlencoded"}, data={"search_txt": keyword_cp949})
+    site_name: str = None
+    optlist, args = getopt.getopt(sys.argv[1:], "s:")
+    for o, a in optlist:
+        if o == '-s':
+            site_name = a
+            
+    keyword = urllib.parse.quote(args[0])
+    keyword_cp949 = args[0].encode("cp949")
 
-    config = json.load(open(os.path.join(os.environ["FEED_MAKER_WORK_DIR"], "marumaru", "site_config.json")))
-    domain = URL.get_url_domain(config["url"])
-    search_site("marumaru", "/bbs/search.php?url=https%3A%2F%2F" + domain + "%2Fbbs%2Fsearch.php&stx=" + keyword, {"class": "media-heading"})
-
-    #search_site("manamoa", "/bbs/search.php?url=https%3A%2F%2Fmanamoa34.net%2Fbbs%2Fsearch.php&sfl=0&stx=" + keyword, {"class": "manga-subject"})
-
+    site_args_map = { 
+        "jmana": ["/comic_list?keyword=" + keyword, {"class": "tit"}],
+        "ornson": ["/search?skeyword=" + keyword, {"class": "tag_box"}],
+        "manatoki": ["/comic?stx=" + keyword, {"class": "list-item"}],
+        "copytoon": ["/bbs/search_webtoon.php?stx=" + keyword, {"class": "section-item-title"}],
+        "wfwf": ["/search.html?q=" + urllib.parse.quote(keyword_cp949), {"class": "searchLink"}],
+        "wtwt": ["/sh", {"path": '/html/body/section/div/div[2]/div/div[3]/ul/li'}, Method.POST, {"Content-Type": "application/x-www-form-urlencoded"}, {"search_txt": keyword_cp949}],
+        "marumaru": ["/bbs/search.php?stx=" + keyword, {"class": "media"}],
+        "funbe": ["/bbs/search.php?stx=" + keyword, {"class": "section-item-title"}],
+        "dangtoon": ["/bbs/search_webtoon.php?stx=" + keyword, {"class": "section-item-title"},],
+        "tkor": ["/bbs/search.php?stx=" + keyword, {"class": "section-item-title"}],
+        "flix": ["/bbs/search.php?stx=" + keyword, {"class": "post-list"}],
+        "manapang": ["/search/main?tse_key_=" + keyword, {"class": "boxs"}],
+        "protoon": ["/search/main?tse_key_=" + keyword, {"class": "boxs"}],
+        "toonflix": ["/search/main?tse_key_=" + keyword, {"class": "boxs"}]
+    }
+    for site, args_map in site_args_map.items():
+        if (site_name and site_name == site) or not site_name:
+            # -s 옵션을 지정하지 않았거나, 지정한 사이트에 대해서만 검색
+            search_site(site, *site_args_map[site])
+            
     return 0
 
 
