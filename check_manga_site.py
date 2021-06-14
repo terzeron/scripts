@@ -61,24 +61,6 @@ def get_location(headers: Dict[str, Any]):
     return new_url
 
 
-def spider(url: str, config: Dict[str, Any]) -> str:
-    LOGGER.debug("# spider(url=%s, config=%r)", url, config)
-    do_send = False
-    new_url = ""
-    print("spidering start")
-    crawler = Crawler(method=Method.HEAD, headers=config["headers"])
-    response, response_headers = crawler.run(url)
-    #LOGGER.debug("response=%s, response_headers=%r", response, response_headers)
-    if response != "200":
-        if response_headers:
-            new_url = get_location(response_headers)
-            if new_url.startswith("//"):
-                new_url = URL.get_url_scheme(url) + ":" + new_url
-        do_send = True
-    print("spidering end")
-    return do_send, new_url
-
-
 def get(url: str, config: Dict[str, Any]) -> Tuple[bool, str, str]:
     LOGGER.debug("# get(url=%s, config=%r)", url, config)
     print("getting start")
@@ -105,6 +87,7 @@ def get(url: str, config: Dict[str, Any]) -> Tuple[bool, str, str]:
             print("old url not found")
             do_send = True
     print("getting end")
+    del crawler
     return do_send, response, new_url
     
 
@@ -177,13 +160,6 @@ def main() -> int:
 
     new_pattern, pre, domain_postfix, post = get_url_pattern(url)
     
-    if not config["render_js"]:
-        do_send, new_url = spider(url, config)
-        if do_send:
-            print("can't get access to url '%s'" % url)
-            send_alarm(url, new_url)
-            return 0
-        
     do_send, response, new_url = get(url, config)
     if do_send:
         if not new_url:
