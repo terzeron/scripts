@@ -56,8 +56,11 @@ def read_config(site_config_file) -> Optional[Dict[str, Any]]:
 def get_location(headers: Dict[str, Any]):
     LOGGER.debug("# get_location(headers=%r)", headers)
     new_url = ""
-    if headers and "Location" in headers:
-        new_url = headers["Location"]
+    if headers:
+        if "Location" in headers:
+            new_url = headers["Location"]
+        elif "location" in headers:
+            new_url = headers["location"]
     return new_url
 
 
@@ -70,7 +73,8 @@ def get(url: str, config: Dict[str, Any]) -> Tuple[bool, str, str]:
     response_headers = None
     crawler = Crawler(method=Method.GET, num_retries=config["num_retries"], render_js=config["render_js"], encoding=config["encoding"], headers=config["headers"], timeout=config["timeout"])
     response, response_headers = crawler.run(url)
-    #LOGGER.debug("response=%s, response_headers=%r", response, response_headers)
+    LOGGER.debug("response_headers=%r", response_headers)
+    #LOGGER.debug("response=%s", response)
     if response_headers:
         new_url = get_location(response_headers)
         if new_url:
@@ -86,6 +90,7 @@ def get(url: str, config: Dict[str, Any]) -> Tuple[bool, str, str]:
         if URL.get_url_domain(url) not in response:
             print("old url not found")
             do_send = True
+
     print("getting end")
     del crawler
     return do_send, response, new_url
