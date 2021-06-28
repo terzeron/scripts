@@ -114,7 +114,7 @@ def get_new_url(url: str, response: str, new_pattern: str, pre: str, domain_post
         print("can't find new url")
         new_url = ""
     else:
-        dict(sorted(url_count_map.items(), key=lambda item: item[1], reverse=True))
+        url_count_map = dict(sorted(url_count_map.items(), key=lambda item: item[1], reverse=True))
         new_url = list(url_count_map.keys())[0]
     return new_url
 
@@ -169,8 +169,8 @@ def main() -> int:
     if do_send:
         if not new_url:
             new_url = get_new_url(url, response, new_pattern, pre, domain_postfix, post)
-        if url != new_url:
             print("New url: '%s'" % new_url)
+        if url != new_url:
             send_alarm(url, new_url)
             return 0
 
