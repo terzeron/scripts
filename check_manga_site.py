@@ -9,25 +9,11 @@ import logging
 import logging.config
 from typing import Dict, Any, Optional, Tuple
 from crawler import Crawler, Method
-from feed_maker_util import exec_cmd, URL
+from feed_maker_util import URL
 
 
 logging.config.fileConfig(os.environ["FEED_MAKER_HOME_DIR"] + "/bin/logging.conf")
 LOGGER = logging.getLogger()
-
-
-def send_alarm(url: str, new_url: str) -> int:
-    LOGGER.debug("# send_alarm(url=%s, new_url=%s)", url, new_url)
-    print("alarming start")
-    ret = 0
-    msg = "no service from %s\nwould you check the new site? %s" % (url, new_url)
-    cmd = "send_msg_to_gmail.sh -s 'check_manga_site.py' '%s'" % msg
-    _, error = exec_cmd(cmd)
-    if error:
-        print("can't execute a command '%s'" % cmd)
-        ret = -1
-    print("alarming end")
-    return ret
 
 
 def read_config(site_config_file) -> Optional[Dict[str, Any]]:
@@ -68,11 +54,15 @@ def get(url: str, config: Dict[str, Any]) -> Tuple[bool, str, str]:
     LOGGER.debug("# get(url=%s, config=%r)", url, config)
     print("getting start")
     new_url = ""
-    do_send = False
     response = None
     response_headers = None
     crawler = Crawler(method=Method.GET, num_retries=config["num_retries"], render_js=config["render_js"], encoding=config["encoding"], headers=config["headers"], timeout=config["timeout"])
-    response, response_headers = crawler.run(url)
+    try:
+        response, response_headers = crawler.run(url)
+    except Crawler.ReadTimeoutException:
+        print("read timeout")
+        return False, None, None
+    
     LOGGER.debug("response_headers=%r", response_headers)
     #LOGGER.debug("response=%s", response)
     if response_headers:
@@ -82,18 +72,19 @@ def get(url: str, config: Dict[str, Any]) -> Tuple[bool, str, str]:
     
     if not response:
         print("no response")
-        do_send = True
+        return False, None, None
     else:
         if config["keyword"] not in response:
             print("no keyword")
-            do_send = True
+            return False, None, None
+
         if URL.get_url_domain(url) not in response:
             print("old url not found")
-            do_send = True
+            return False, None, None
 
     print("getting end")
     del crawler
-    return do_send, response, new_url
+    return True, response, new_url
     
 
 def get_new_url(url: str, response: str, new_pattern: str, pre: str, domain_postfix: str, post: str) -> str:
@@ -144,7 +135,6 @@ def get_url_pattern(url: str) -> Tuple[str, str, str]:
             
 def main() -> int:
     LOGGER.debug("# main()")
-    do_send: bool = False
     new_url = ""
     site_config_file = "site_config.json"
     if not os.path.isfile(site_config_file):
@@ -159,20 +149,22 @@ def main() -> int:
     print("url=%s" % url)
 
     try:
-        os.remove("cookies.json")
+        os.remove("cookies.requestsclient.json")
+        os.remove("cookies.headlessbrowser.json")
     except FileNotFoundError:
         pass
 
     new_pattern, pre, domain_postfix, post = get_url_pattern(url)
     
-    do_send, response, new_url = get(url, config)
-    if do_send:
+    success, response, new_url = get(url, config)
+    if not success:
         if not new_url:
             new_url = get_new_url(url, response, new_pattern, pre, domain_postfix, post)
             print("New url: '%s'" % new_url)
         if url != new_url:
-            send_alarm(url, new_url)
-            return 0
+            if new_url:
+                print("no service from %s\nwould you check the new site? %s" % (url, new_url))
+        return -1
 
     print("Ok")
     return 0
