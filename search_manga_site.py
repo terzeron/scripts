@@ -41,7 +41,12 @@ def extract_sub_content_from_agit(site_url_prefix: str, content: str, keyword: s
     LOGGER.debug("# extract_sub_content_from_agit(site_url_prefix=%s)", site_url_prefix)
     result_list = []
 
-    content = re.sub(r';$', '', re.sub(r'^var\s+\w+\s+=\s+', '', content))
+    content = re.sub(r'^var\s+\w+\s+=\s+', '', content)
+    if re.search(r';$', content):
+        content = re.sub(r';$', '', content)
+    else:
+        return None
+
     data = json.loads(content)
     for item in data:
         if "t" in item:
@@ -138,13 +143,16 @@ def search_site(site_name: str, url_postfix: str, attrs: Dict[str, str], method=
     os.chdir(os.path.join(os.environ["FEED_MAKER_WORK_DIR"], site_name))
     config = json.load(open("site_config.json"))
     if site_name == "agit":
-        content1 = get_data_from_site(config, "/data/azi_webtoon_0.js", method=method, headers=headers, data=data)
-        result1 = extract_sub_content_from_agit(config["url"], content1, attrs["keyword"])
-        content2 = get_data_from_site(config, "/data/azi_webtoon_1.js", method=method, headers=headers, data=data)
-        result2 = extract_sub_content_from_agit(config["url"], content2, attrs["keyword"])
         result_list = []
-        result_list.extend(result1)
-        result_list.extend(result2)
+        for i in range(config["num_retries"]):
+            content1 = get_data_from_site(config, "/data/azi_webtoon_0.js", method=method, headers=headers, data=data)
+            result1 = extract_sub_content_from_agit(config["url"], content1, attrs["keyword"])
+            content2 = get_data_from_site(config, "/data/azi_webtoon_1.js", method=method, headers=headers, data=data)
+            result2 = extract_sub_content_from_agit(config["url"], content2, attrs["keyword"])
+            if result1 and result2:
+                result_list.extend(result1)
+                result_list.extend(result2)
+                break
     else:
         content = get_data_from_site(config, url_postfix, method=method, headers=headers, data=data)
         result_list = extract_sub_content_by_attrs(config["url"], content, attrs)
@@ -171,21 +179,20 @@ def main():
 
     site_args_map = { 
         "jmana": ["/comic_list?keyword=" + keyword, {"class": "tit"}],
-        "ornson": ["/search?skeyword=" + keyword, {"class": "tag_box"}],
+        #"ornson": ["/search?skeyword=" + keyword, {"class": "tag_box"}],
         "manatoki": ["/comic?stx=" + keyword, {"class": "list-item"}],
         "newtoki": ["/webtoon?stx=" + keyword, {"class": "list-item"}],
-        #"copytoon": ["/bbs/search_webtoon.php?stx=" + keyword, {"class": "section-item-title"}],
+        "copytoon": ["/bbs/search_webtoon.php?stx=" + keyword, {"class": "section-item-title"}],
         "wfwf": ["/search.html?q=" + urllib.parse.quote(keyword_cp949), {"class": "searchLink"}],
         "wtwt": ["/sh", {"path": '/html/body/section/div/div[2]/div/div[3]/ul/li'}, Method.POST, {"Content-Type": "application/x-www-form-urlencoded"}, {"search_txt": keyword_cp949}],
         "marumaru": ["/bbs/search.php?stx=" + keyword, {"class": "media"}],
-        "funbe": ["/bbs/search.php?stx=" + keyword, {"class": "section-item-title"}],
+        #"funbe": ["/bbs/search.php?stx=" + keyword, {"class": "section-item-title"}],
         #"dangtoon": ["/bbs/search_webtoon.php?stx=" + keyword, {"class": "section-item-title"},],
-        "tkor": ["/bbs/search.php?stx=" + keyword, {"class": "section-item-title"}],
+        #"tkor": ["/bbs/search.php?stx=" + keyword, {"class": "section-item-title"}],
         #"flix": ["/bbs/search.php?stx=" + keyword, {"class": "post-list"}],
-        "manapang": ["/search/main?tse_key_=" + keyword, {"class": "boxs"}],
+        #"manapang": ["/search/main?tse_key_=" + keyword, {"class": "boxs"}],
         #"protoon": ["/search/main?tse_key_=" + keyword, {"class": "boxs"}],
         "buzztoon": ["/bbs/search.php?stx=" + keyword, {"class": "list_info_title"}],
-        #"toonflix": ["/search/main?tse_key_=" + keyword, {"class": "boxs"}],
         #"sektoon": ["/?post_type=post&s=" + keyword, {"class": "entry-title"}],
         "agit":["", {"keyword": original_keyword}],
     }
