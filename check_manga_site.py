@@ -76,11 +76,11 @@ def get(url: str, config: Dict[str, Any]) -> Tuple[bool, str, str]:
     else:
         if config["keyword"] not in response:
             print("no keyword")
-            return False, None, None
+            return False, response, new_url
 
         if URL.get_url_domain(url) not in response:
             print("old url not found")
-            return False, None, None
+            return False, response, new_url
 
     print("getting end")
     del crawler
@@ -105,8 +105,8 @@ def get_new_url(url: str, response: str, new_pattern: str, pre: str, domain_post
         print("can't find new url")
         new_url = ""
     else:
-        url_count_map = dict(sorted(url_count_map.items(), key=lambda item: item[1], reverse=True))
-        new_url = list(url_count_map.keys())[0]
+        sorted_list = sorted(url_count_map.items(), key=lambda item: item[1], reverse=True)
+        new_url = sorted_list[0][0]
     return new_url
 
 
