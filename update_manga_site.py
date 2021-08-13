@@ -53,22 +53,28 @@ def update_domain() -> bool:
         if not os.path.isdir(os.path.join(".", entry)) or entry.startswith("."):
             continue
         print("- %s: " % entry, end='')
-        conf_file = os.path.join(entry, "conf.xml")
+        conf_file = os.path.join(entry, "conf.json")
         print(".", end='')
-        ifile = open(conf_file, "r")
         temp_conf_file = conf_file + ".temp"
-        ofile = open(temp_conf_file, "w")
-        for line in ifile:
-            m = re.search(r'(?P<pre><list_url><!\[CDATA\[https?://[\w\.\-]+\D)(?P<variant_postfix>\d+|\.\w+)(?P<post>(\.|/).*]]></list_url>)', line)
-            if m:
-                line = "            " + m.group("pre") + new_postfix + m.group("post") + "\n"
-            ofile.write(line)
-        ifile.close()
-        ofile.close()
-        os.rename(temp_conf_file, conf_file)
+        with open(conf_file, "r") as infile:
+            data = json.load(infile)
+            if "configuration" in data:
+                if "collection" in data["configuration"]:
+                    if "list_url_list" in data["configuration"]["collection"]:
+                        new_list_url_list = []
+                        for list_url in data["configuration"]["collection"]["list_url_list"]:
+                            m = re.search(r'(?P<pre>https?://[\w\.\-]+\D)(?P<variant_postfix>\d+|\.\w+)(?P<post>(\.|/).*)', list_url)
+                            if m:
+                                new_list_url = m.group("pre") + new_postfix + m.group("post")
+                                new_list_url_list.append(new_list_url)
+                        data["configuration"]["collection"]["list_url_list"] = new_list_url_list
+                                
+        with open(temp_conf_file, "w") as outfile:
+            json.dump(data, outfile, indent=2, ensure_ascii=False)
+            os.rename(temp_conf_file, conf_file)
 
         print(".", end='')
-        git_cmd: str = "git add %s" % conf_file
+        git_cmd = "git add %s" % conf_file
         _, error = exec_cmd(git_cmd)
         if error:
             LOGGER.error("can't execute a command '%s', %s", git_cmd, error)
@@ -88,7 +94,7 @@ def update_domain() -> bool:
         print("")
 
     print("- git commit")
-    git_cmd: str = "git commit -m 'modify site url'"
+    git_cmd = "git commit -m 'modify site url to %s'" % new_url
     _, error = exec_cmd(git_cmd)
     if error:
         LOGGER.error("can't execute a command '%s', %s", git_cmd, error)
