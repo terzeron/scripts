@@ -6,18 +6,15 @@ export LOG_DIR=$HOME/logs
 while (( $# )); do
     url=$1
     shift
-    validation_msg=$1
-    shift
+    echo "url=$url"
 
-    log=$LOG_DIR/result.log
-    result=$(curl -s "$url")
-    echo "$result" | grep "$validation_msg" > $log || \
+    md5=$(echo $url | md5sum | cut -c-5)
+    logfile=$LOG_DIR/check_terzeron_com_${md5}.log
+    result=$((echo "$url"; curl "$url") > $logfile 2>&1)
+    [ $? -eq 0 ] || \
         (echo "Error: can't access to $url"; \
          echo; \
-         echo "------ result ------"; \
-         echo "$result"; \
-         echo; \
-         echo "----- log file ------";
-         cat $log;) | \
+         echo "----- logfile file ------";
+         cat $logfile) | \
             send_msg_to_gmail.sh -s "checking $url"
 done
