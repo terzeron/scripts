@@ -9,6 +9,7 @@ import urllib
 import logging
 import logging.config
 from typing import Dict, Tuple, List
+from pathlib import Path
 from bs4 import BeautifulSoup
 from crawler import Crawler, Method
 from feed_maker_util import URL, HTMLExtractor
@@ -16,6 +17,9 @@ from feed_maker_util import URL, HTMLExtractor
 
 logging.config.fileConfig(os.environ["FEED_MAKER_HOME_DIR"] + "/bin/logging.conf")
 LOGGER = logging.getLogger()
+
+work_dir_path = Path(os.environ["FEED_MAKER_WORK_DIR"])
+marumaru_site_config_file_path = work_dir_path / "marumaru" / "site_config.json"
 
 
 def print_content(site_name: str, result_list: List[Tuple[str, str]]) -> None:
@@ -140,28 +144,38 @@ def extract_sub_content_by_attrs(site_url_prefix: str, content: str, attrs: Dict
 
 def search_site(site_name: str, url_postfix: str, attrs: Dict[str, str], method=Method.GET, headers={}, data={}):
     LOGGER.debug("# search_site(site_name=%s, url_postfix=%s, attrs=%r, method=%s, headers=%r, data=%r)", site_name, url_postfix, attrs, method, headers, data)
-    os.chdir(os.path.join(os.environ["FEED_MAKER_WORK_DIR"], site_name))
-    config = json.load(open("site_config.json"))
-    if site_name == "agit":
-        result_list = []
-        for i in range(config["num_retries"]):
-            content1 = get_data_from_site(config, "/data/azi_webtoon_0.js", method=method, headers=headers, data=data)
-            result1 = extract_sub_content_from_agit(config["url"], content1, attrs["keyword"])
-            content2 = get_data_from_site(config, "/data/azi_webtoon_1.js", method=method, headers=headers, data=data)
-            result2 = extract_sub_content_from_agit(config["url"], content2, attrs["keyword"])
-            if result1 and result2:
-                result_list.extend(result1)
-                result_list.extend(result2)
-                break
-    else:
-        content = get_data_from_site(config, url_postfix, method=method, headers=headers, data=data)
-        result_list = extract_sub_content_by_attrs(config["url"], content, attrs)
+    os.chdir(work_dir_path / site_name)
+    with open("site_config.json", 'r', encoding='utf-8') as infile:
+        config = json.load(infile)
+        if site_name == "agit":
+            version = ""
+            content = get_data_from_site(config, "")
+            m = re.search(r'src=\'/data/azi_webtoon_\d.js(?P<version>\?v=[^\']+)\'', content)
+            if m:
+                version = m.group("version")
+            result_list = []
+            for i in range(config["num_retries"]):
+                content0 = get_data_from_site(config, "/data/azi_webtoon_0.js" + version, method=method, headers=headers, data=data)
+                result0 = extract_sub_content_from_agit(config["url"], content0, attrs["keyword"])
+                content1 = get_data_from_site(config, "/data/azi_webtoon_1.js" + version, method=method, headers=headers, data=data)
+                result1 = extract_sub_content_from_agit(config["url"], content1, attrs["keyword"])
+                if result0:
+                    result_list.extend(result0)
+                    break
+                if result1:
+                    result_list.extend(result1)
+                    break
+        else:
+            content = get_data_from_site(config, url_postfix, method=method, headers=headers, data=data)
+            result_list = extract_sub_content_by_attrs(config["url"], content, attrs)
     print_content(site_name, result_list)
 
 
 def get_marumaru_site_domain():
-    marumaru_site_config = json.load(open(os.path.join(os.environ["FEED_MAKER_WORK_DIR"], "marumaru", "site_config.json")))
-    return URL.get_url_domain(marumaru_site_config["url"])
+    with open(marumaru_site_config_file_path, 'r', encoding='utf-8') as infile:
+        marumaru_site_config = json.load(infile)
+        return URL.get_url_domain(marumaru_site_config["url"])
+    return ""
 
     
 def main():
