@@ -193,14 +193,14 @@ def main():
 
     site_args_map = { 
         "jmana": ["/comic_list?keyword=" + keyword, {"class": "tit"}],
-        #"ornson": ["/search?skeyword=" + keyword, {"class": "tag_box"}],
+        "ornson": ["/search?skeyword=" + keyword, {"class": "tag_box"}],
         "manatoki": ["/comic?stx=" + keyword, {"class": "list-item"}],
         "newtoki": ["/webtoon?stx=" + keyword, {"class": "list-item"}],
         "copytoon": ["/bbs/search_webtoon.php?stx=" + keyword, {"class": "section-item-title"}],
         "wfwf": ["/search.html?q=" + urllib.parse.quote(keyword_cp949), {"class": "searchLink"}],
         "wtwt": ["/sh", {"path": '/html/body/section/div/div[2]/div/div[3]/ul/li'}, Method.POST, {"Content-Type": "application/x-www-form-urlencoded"}, {"search_txt": keyword_cp949}],
         "marumaru": ["/bbs/search.php?stx=" + keyword, {"class": "media"}],
-        #"funbe": ["/bbs/search.php?stx=" + keyword, {"class": "section-item-title"}],
+        "funbe": ["/bbs/search.php?stx=" + keyword, {"class": "section-item-title"}],
         #"dangtoon": ["/bbs/search_webtoon.php?stx=" + keyword, {"class": "section-item-title"},],
         #"tkor": ["/bbs/search.php?stx=" + keyword, {"class": "section-item-title"}],
         #"flix": ["/bbs/search.php?stx=" + keyword, {"class": "post-list"}],
