@@ -83,7 +83,7 @@ def extract_sub_content_by_attrs(site_url_prefix: str, content: str, attrs: Dict
                 link = re.sub(r'&amp;', '&', link)
                 link = re.sub(r'&?cpa=\d+', '', link)
                 link = re.sub(r'&?stx=\d+', '', link)
-                
+
             # 주석 제거
             e = re.sub(r'<!--.*-->', '', str(e))
             # 단순(텍스트만 포함한) p 태그 제거
@@ -120,9 +120,10 @@ def extract_sub_content_by_attrs(site_url_prefix: str, content: str, attrs: Dict
                 if prev_e == e:
                     break
                 prev_e = e
-                 
-            if "jmana" not in site_url_prefix:
+
+            if "jmana" not in site_url_prefix and "flix" not in site_url_prefix:
                 e = re.sub(r'.*\b\d+(화|권|부|편).*', '', e)
+
             # 모든 html 태그 제거            
             e = re.sub(r'</?\w+(\s*[\w\-_]+="[^"]*")*/?>', '', e)
             # #태그 제거
@@ -201,11 +202,8 @@ def main():
         "wtwt": ["/sh", {"path": '/html/body/section/div/div[2]/div/div[3]/ul/li'}, Method.POST, {"Content-Type": "application/x-www-form-urlencoded"}, {"search_txt": keyword_cp949}],
         "marumaru": ["/bbs/search.php?stx=" + keyword, {"class": "media"}],
         "funbe": ["/bbs/search.php?stx=" + keyword, {"class": "section-item-title"}],
-        #"dangtoon": ["/bbs/search_webtoon.php?stx=" + keyword, {"class": "section-item-title"},],
-        #"tkor": ["/bbs/search.php?stx=" + keyword, {"class": "section-item-title"}],
-        #"flix": ["/bbs/search.php?stx=" + keyword, {"class": "post-list"}],
-        #"manapang": ["/search/main?tse_key_=" + keyword, {"class": "boxs"}],
-        #"protoon": ["/search/main?tse_key_=" + keyword, {"class": "boxs"}],
+        "tkor": ["/bbs/search.php?stx=" + keyword, {"class": "section-item-title"}],
+        "flix": ["/bbs/search.php?stx=" + keyword, {"class": "post-list"}, Method.POST, {"Content-Type": "application/x-www-form-urlencoded"}, {"keyword": original_keyword}],
         "buzztoon": ["/bbs/search.php?stx=" + keyword, {"class": "list_info_title"}],
         #"sektoon": ["/?post_type=post&s=" + keyword, {"class": "entry-title"}],
         "agit":["", {"keyword": original_keyword}],

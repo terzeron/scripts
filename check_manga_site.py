@@ -16,7 +16,7 @@ logging.config.fileConfig(os.environ["FEED_MAKER_HOME_DIR"] + "/bin/logging.conf
 LOGGER = logging.getLogger()
 
 
-def read_config(site_config_file) -> Optional[Dict[str, Any]]:
+def read_config(site_config_file: str) -> Optional[Dict[str, Any]]:
     LOGGER.debug("# read_config(site_config_file=%r)", site_config_file)
     with open(site_config_file, "r") as f:
         config = json.load(f)
@@ -61,31 +61,31 @@ def get(url: str, config: Dict[str, Any]) -> Tuple[bool, str, str]:
         response, response_headers = crawler.run(url)
     except Crawler.ReadTimeoutException:
         print("read timeout")
-        return False, None, None
-    
+        return False, "", ""
+
     LOGGER.debug("response_headers=%r", response_headers)
     #LOGGER.debug("response=%s", response)
     if response_headers:
         new_url = get_location(response_headers)
         if new_url:
             print("new_url=%s" % new_url)
-    
+
     if not response:
         print("no response")
-        return False, None, None
-    else:
-        if config["keyword"] not in response:
-            print("no keyword")
-            return False, response, new_url
+        return False, "", ""
 
-        if URL.get_url_domain(url) not in response:
-            print("old url not found")
-            return False, response, new_url
+    if config["keyword"] not in response:
+        print("no keyword")
+        return False, response, new_url
+
+    if URL.get_url_domain(url) not in response:
+        print("old url not found")
+        return False, response, new_url
 
     print("getting end")
     del crawler
     return True, response, new_url
-    
+
 
 def get_new_url(url: str, response: str, new_pattern: str, pre: str, domain_postfix: str, post: str) -> str:
     LOGGER.debug("# get_new_url(url=%s, response, new_pattern=%s, pre=%s, domain_postfix=%s, post=%s)", url, new_pattern, pre, domain_postfix, post)
@@ -110,7 +110,7 @@ def get_new_url(url: str, response: str, new_pattern: str, pre: str, domain_post
     return new_url
 
 
-def get_url_pattern(url: str) -> Tuple[str, str, str]:
+def get_url_pattern(url: str) -> Tuple[str, str, str, str]:
     LOGGER.debug("# get_url_pattern(url=%s)", url)
     new_pattern: str = ""
     pre: str = ""
@@ -132,7 +132,7 @@ def get_url_pattern(url: str) -> Tuple[str, str, str]:
             LOGGER.debug("second pattern: %s, %s, %s", pre, post, new_pattern)
     return new_pattern, pre, domain_postfix, post
 
-            
+
 def main() -> int:
     LOGGER.debug("# main()")
     new_url = ""
@@ -155,7 +155,7 @@ def main() -> int:
         pass
 
     new_pattern, pre, domain_postfix, post = get_url_pattern(url)
-    
+
     success, response, new_url = get(url, config)
     if not success:
         if not new_url:
