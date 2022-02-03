@@ -2,21 +2,16 @@
 
 PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 
-WORK_DIR=$HOME/workspace
-BACKUP_NAME=config
-BACKUP_DIR="$HOME/googledrive/googledrive/backup"
-
 date_str=`date +"%y%m%d"`
-backup_file=${WORK_DIR}/${BACKUP_NAME}.${date_str}.tar.bz2
+WORK_DIR=/
+SRC_DIR=etc
+backup_file=/mnt/data2/nuc_backup/config.${date_str}.tar.bz2
 
 date
 
-cd /
+cd $WORK_DIR
 
 echo "### making the backup file ###"
-tar cvfj ${backup_file} /etc > /dev/null
-
-echo "### moving the backup file to storage ###"
-sudo -u terzeron mv "${backup_file}" "${BACKUP_DIR}"
+tar cvfj $backup_file $SRC_DIR > /dev/null
 
 date
