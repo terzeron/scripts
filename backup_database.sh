@@ -21,7 +21,7 @@ function backup() {
     id=$2
     passwd=$3
     
-    backup_file=/mnt/data2/nuc_backup/${database}.db.sql.${date_str}.bz2
+    backup_file=/mnt/data/nuc_backup/${database}.db.sql.${date_str}.bz2
     echo "### making the backup file for $database database ###"
     mysqldump --no-tablespaces -h localhost -u $id -p$passwd $database | bzip2 --best > ${backup_file}
 }

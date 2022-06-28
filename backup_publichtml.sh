@@ -5,7 +5,7 @@ PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin
 date_str=`date +"%y%m%d"`
 WORK_DIR=$HOME
 SRC_DIR=public_html
-backup_file=/mnt/data2/nuc_backup/publichtml.${date_str}.tar.bz2
+backup_file=/mnt/data/nuc_backup/publichtml.${date_str}.tar.bz2
 
 date
 
