@@ -4,13 +4,13 @@ export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:$HOME/b
 export LOG_DIR=$HOME/logs
 
 while (( $# )); do
-    url=$1
+    url="$1"
     shift
     echo "url=$url"
 
     md5=$(echo "$url" | md5sum | cut -c-5)
     logfile=$LOG_DIR/check_terzeron_com_${md5}.log
-    if (echo "$url"; curl "$url") > "$logfile" 2>&1; then
+    if !(echo "$url"; curl "$url") > "$logfile" 2>&1; then
         ( 
             echo "Error: can't access to $url"
             echo
