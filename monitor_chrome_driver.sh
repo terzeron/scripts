@@ -1,7 +1,7 @@
 #!/bin/bash
 
-count=$(ps aux | egrep "(chromedriver|google-chrome)" | grep -v grep | wc -l)
+count=$(pgrep -c "(chromedriver|google-chrome)")
 if [ "$count" -gt 5 ]; then
-    send_msg_to_line.sh "Too many chrome driver processes ($count)"
+    send_msg_to_gmail.py -s "Monitoring chrome browser and driver" "Too many chrome driver processes ($count)"
 fi
 
