@@ -7,8 +7,8 @@ while (( $# )); do
     process_name=$1
     shift
 
-    pgrep $process_name || \
+    pgrep "$process_name" || \
         (echo "Error: can't find process"; \
          echo;) | \
-            send_msg_to_gmail.sh -s "checking process '$process_name'"
+            send_msg_to_gmail.py -s "checking process '$process_name'"
 done
