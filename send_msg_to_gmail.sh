@@ -9,8 +9,10 @@ fi
 
 if [ "$1" != "" ]; then
     msg=$1
-    echo "$msg" | mailx -s "$subject" -r terzeron@terzeron.com terzeron@gmail.com 
+    echo "$msg" | mutt -s "$subject" terzeron@gmail.com && \
+    echo "sent a mail to gmail.com"
 else
-    cat - | mailx -s "$subject" -r terzeron@terzeron.com terzeron@gmail.com 
+    cat - | mutt -s "$subject" terzeron@gmail.com && \
+    echo "sent a mail to gmail.com"
 fi
 

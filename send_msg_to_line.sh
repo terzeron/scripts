@@ -13,4 +13,15 @@ else
     done
 fi
 
-/usr/bin/curl -s -X POST -H 'Content-Type:application/json' -H 'Authorization: Bearer gdrao6YPr50SCzwqb7By40yqwOotDdo9a/+nGYmFkL3xMUA1P3OPJO7aKlNTnN12tz0BzJ5C/TX+gTZiIUFeXIa8X1reFHNXPcJ/hlZysxTkBOkSzbEI/TUbBVDjves+lDqDwVicBisE3/MelN5QrAdB04t89/1O/w1cDnyilFU=' -d '{ "to": "U52aa71b262aa645ba5f3e4786949ef23", "messages":[ { "type": "text", "text": "'"$msg"'" }  ] }' https://api.line.me/v2/bot/message/push > /dev/null
+dir=$(dirname $0)
+config_file="$dir/global_config.json"
+
+line_access_token=$(jq -r ".line_access_token" < "$config_file")
+receiver_line_id=$(jq -r ".receiver_line_id" < "$config_file")
+
+line_push_url="https://api.line.me/v2/bot/message/push"
+content_type_header="Content-Type: application/json"
+auth_header="Authorization: Bearer $line_access_token"
+payload='{ "to": "'$receiver_line_id'", "messages":[ { "type": "text", "text": "'$msg'" } ] }'
+
+/usr/bin/curl -s -X POST -H "$content_type_header" -H "$auth_header" -d "$payload" "$line_push_url" > /dev/null
