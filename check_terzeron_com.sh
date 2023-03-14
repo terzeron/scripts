@@ -8,13 +8,14 @@ while (( $# )); do
     shift
     echo "url=$url"
 
-    md5=$(echo $url | md5sum | cut -c-5)
+    md5=$(echo "$url" | md5sum | cut -c-5)
     logfile=$LOG_DIR/check_terzeron_com_${md5}.log
-    result=$((echo "$url"; curl "$url") > $logfile 2>&1)
-    [ $? -eq 0 ] || \
-        (echo "Error: can't access to $url"; \
-         echo; \
-         echo "----- logfile file ------";
-         cat $logfile) | \
-            send_msg_to_gmail.sh -s "checking $url"
+    if (echo "$url"; curl "$url") > "$logfile" 2>&1; then
+        ( 
+            echo "Error: can't access to $url"
+            echo
+            echo "----- logfile file ------"
+            cat "$logfile"
+        ) | send_msg_to_gmail.py -s "checking $url"
+    fi
 done
