@@ -10,13 +10,13 @@ import datetime
 import json
 from pathlib import Path
 from typing import Tuple
-from distutils.spawn import find_executable
+from shutil import which
 import requests
 
 
 class Mailer():
     def __init__(self):
-        program_full_path = find_executable(sys.argv[0])
+        program_full_path = which(sys.argv[0])
         if program_full_path:
             conf_file_path = Path(program_full_path).parent / "global_config.json"
             with conf_file_path.open("r", encoding="utf-8") as infile:
@@ -26,6 +26,10 @@ class Mailer():
                     self.access_key = data["naver_cloud_access_key"]
                 if "naver_cloud_secret_key" in data and data["naver_cloud_secret_key"]:
                     self.secret_key = data["naver_cloud_secret_key"]
+                if "nhn_cloud_appkey" in data and data["nhn_cloud_appkey"]:
+                    self.appkey = data["nhn_cloud_appkey"]
+                if "nhn_cloud_secretkey" in data and data["nhn_cloud_secretkey"]:
+                    self.secretkey = data["nhn_cloud_secretkey"]
                 if "mail_sender_address" in data and data["mail_sender_address"]:
                     self.sender = data["mail_sender_address"]
                 if "mail_recipient_address" in data and data["mail_recipient_address"]:
