@@ -1,75 +1,70 @@
 #!/usr/bin/env python
 
 import sys
-import os
 import re
-from datetime import datetime
-from pathlib import Path
+import os
+from glob import glob
 from datetime import date, timedelta
+from typing import Dict, List
+from pathlib import Path
 
 
-st = {}
-t = date.today()
+st: Dict[str, List[int]] = {}
+today = date.today()
 
 
-def determine_date_range() -> str:
+def determine_date_range_pattern(num_days: int) -> str:
     s = "(?P<date>"
-    for i in range(5):
-        if s != "(":
+    for i in range(num_days):
+        if s != "(?P<date>":
             s += "|"
-        dt = t - timedelta(i)
+        dt = today - timedelta(i)
         s += str(dt)
     s += ")"
     return s
 
 
-def count_error_log(file: Path, date_range: str) -> None:
+def count_error_log(file: Path, date_range: str, num_days) -> None:
     state = 0
-    current_date_str = datetime.now().strftime("%Y-%m-%d")
-    
+
     with open(file, "r", encoding="utf-8") as f:
         for line in f:
             if state == 0:
-                m = re.search(r'\[' + current_date_str + ' \d\d:\d\d:\d\d[.,]\d+\]', line)
-                if m:
-                    state = 1
-            elif state == 1:
                 m = re.search(r'making feed file \'(?P<feed>[^\']+)\/[^/]+\.xml\'', line)
                 if m:
                     feed = m.group("feed")
                     if feed not in st:
-                        st[feed] = [0, 0, 0, 0, 0]
-                
+                        st[feed] = [0] * num_days
+                    state = 1
+            elif state == 1:
                 m = re.search(r'\[' + date_range + ' .*\[ERROR\]', line)
                 if m:
-                    date = m.group("date")
-                    if date == str(t):
-                        date_index = 4
-                    elif date == str(t - timedelta(1)):
-                        date_index = 3
-                    elif date == str(t - timedelta(2)):
-                        date_index = 2
-                    elif date == str(t - timedelta(3)):
-                        date_index = 1
-                    elif date == str(t - timedelta(4)):
-                        date_index = 0
-                    st[feed][date_index] = st[feed][date_index] + 1
-    
-    
-def main():
-    date_range = determine_date_range()
-    #print(date_range)
-    file = Path("/home/terzeron/workspace/fma/run.log")
-    count_error_log(file, date_range)
+                    dt = m.group("date")
+                    for i in range(num_days):
+                        if dt == str(today - timedelta(i)):
+                            dt_index = num_days - i - 1
+                            break
+                    st[feed][dt_index] = st[feed][dt_index] + 1
+                    state = 0
+                m = re.search(r'Elapsed time', line)
+                if m:
+                    state = 0
 
-    for f in st:
-        file = re.sub(r'(/home/terzeron/workspace/fma/|/run.log)', '', str(f))
-        if st[f] == [0, 0, 0, 0, 0]:
+
+def main():
+    num_days = 7
+    date_range = determine_date_range_pattern(num_days)
+    #print(date_range)
+    for file in glob(os.environ["FEED_MAKER_WORK_DIR"] + "/run.log*"):
+        count_error_log(file, date_range, num_days)
+        
+    for feed_name in st:
+        feed_name = re.sub(r'(/home/terzeron/workspace/fma/|/run.log)', '', str(feed_name))
+        if st[feed_name] == [0] * num_days:
             continue
-        for v in st[f]:
+        for v in st[feed_name]:
             print("{:3d}".format(v), end='')
-        category, feed = file.split('/')
-        #category = category[0] + re.sub(r'[aeiou_0-9]', '', category[1:])
+        category, feed = feed_name.split('/')
         category = category[0] + category[1:]
         new_feed = ""
         for word in feed.split('_'):
@@ -79,7 +74,7 @@ def main():
                 new_feed = word
             else:
                 new_feed += "_" + word
-                
+
         print(" " + category + "/" + new_feed)
 
 
