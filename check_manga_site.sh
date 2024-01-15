@@ -21,9 +21,10 @@ for site in $site_list; do
     
     cd "$FEED_MAKER_WORK_DIR"/"$site" || exit
     
-    if check_manga_site.py > "$log" 2>&1; then
+    if ! check_manga_site.py > "$log" 2>&1; then
         new_number=$(grep "New number: " "$log" | sed -E 's/New number: ([0-9][0-9]*)/\1/')
         if [ "$new_number" != "" ]; then
+            echo "update with new number '$new_number'"
             update_manga_site.py "$new_number" >> "$log" 2>&1
             echo "error in checking $site"
             date
@@ -34,7 +35,7 @@ for site in $site_list; do
     if [ "${site%"${site#?}"}" != "_" ]; then
         keyword=$(jq -r .keyword < site_config.json)
         search_manga_site.py -s "$site" "$keyword" > "$searchresult" 2> "$searcherror"
-        num_lines=$(wc -l "$searchresult")
+        num_lines=$(cat "$searchresult" | wc -l)
         if [ "$num_lines" -lt 1 ]; then
             echo "error in searching '$keyword' in $site"
             date
