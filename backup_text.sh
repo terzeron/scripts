@@ -6,7 +6,7 @@ date_str=`date +"%y%m%d"`
 
 WORK_DIR=$HOME/Downloads
 SRC_DIR=text
-backup_file=/mnt/data/nuc_backup/text.${date_str}.tar.bz2
+backup_file=/mnt/data/backup/text.${date_str}.tar.bz2
 
 date
 
