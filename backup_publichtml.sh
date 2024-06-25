@@ -20,6 +20,6 @@ date
 cd $WORK_DIR
 
 echo "### making the backup file ###"
-tar cvfj "$backup_path" --exclude="public_html/photo/*" --exclude="public_html/xml/*" --exclude="public_html/rss_extend/logs/*" --exclude="public_html/rss_extend/cache/*" --exclude="public_html/node_modules" --exclude="public_html/*/node_modules" --exclude="public_html/*/*/node_modules" $SRC_DIR > /dev/null
+tar cvfj "$backup_path" --exclude="public_html/photo/*" --exclude="public_html/rss_extend/logs/*" --exclude="public_html/rss_extend/cache/*" --exclude="public_html/node_modules" --exclude="public_html/*/node_modules" --exclude="public_html/*/*/node_modules" $SRC_DIR > /dev/null
 
 date
