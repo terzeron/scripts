@@ -55,7 +55,7 @@ def main():
     num_days = 7
     date_range = determine_date_range_pattern(num_days)
     #print(date_range)
-    for file in glob(os.environ["FEED_MAKER_WORK_DIR"] + "/run.log*"):
+    for file in glob(os.environ["FM_WORK_DIR"] + "/run.log*"):
         count_error_log(file, date_range, num_days)
         
     for feed_name in st:
