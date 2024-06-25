@@ -1,25 +1,18 @@
 #!/bin/bash
 
-. ~/workspace/fm/bin/setup.sh
+echo "----------------------------------------------------------------"
+date
 
-export FEED_MAKER_HOME_DIR=$HOME/workspace/fm
-export FEED_MAKER_WORK_DIR=$(dirname "$FEED_MAKER_HOME_DIR")/fma
-export FEED_MAKER_LOG_DIR=$FEED_MAKER_WORK_DIR/logs
-export FEED_MAKER_WWW_ADMIN_DIR=$HOME/public_html/fm
-export FEED_MAKER_WWW_FEEDS_DIR=$HOME/public_html/xml
-export CARTOON_SPLIT_HOME_DIR=$HOME/workspace1/cs.dev
-export PATH=$FEED_MAKER_HOME_DIR/bin:$CARTOON_SPLIT_HOME_DIR:$PATH
-export PYTHONPATH=$FEED_MAKER_HOME_DIR/bin:$PYTHONPATH
-export LOG_DIR=$HOME/logs
+. ~/workspace/fma/.env
 
 site_list=$*
 for site in $site_list; do
     echo "$site"
-    log=$LOG_DIR/check_manga_${site}.log
-    searchresult=$LOG_DIR/search_manga_${site}.result.log
-    searcherror=$LOG_DIR/search_manga_${site}.error.log
+    log=$FM_LOG_DIR/check_manga_${site}.log
+    searchresult=$FM_LOG_DIR/search_manga_${site}.result.log
+    searcherror=$FM_LOG_DIR/search_manga_${site}.error.log
     
-    cd "$FEED_MAKER_WORK_DIR"/"$site" || exit
+    cd "$FM_WORK_DIR"/"$site" || exit
     
     if ! check_manga_site.py > "$log" 2>&1; then
         new_number=$(grep "New number: " "$log" | sed -E 's/New number: ([0-9][0-9]*)/\1/')
@@ -46,3 +39,5 @@ for site in $site_list; do
     sleep 5
 done
 
+echo "----------------------------------------------------------------"
+echo
