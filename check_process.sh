@@ -1,14 +1,16 @@
 #!/bin/bash
 
-export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/usr/local/bin:/usr/local/sbin:$HOME/bin:$HOME/.pyenv/bin:$HOME/.pyenv/shims
-export LOG_DIR=$HOME/logs
+echo "----------------------------------------------------------"
+date
 
 while (( $# )); do
-    process_name=$1
+    process_name="$1"
     shift
-
-    pgrep "$process_name" || \
-        (echo "Error: can't find process"; \
-         echo;) | \
-            send_msg_to_gmail.py -s "checking process '$process_name'"
+    
+    if ! pgrep "$process_name" > /dev/null; then 
+        echo "Error: can't find process" | send_msg_to_gmail.py -s "checking process '$process_name'"
+    fi
 done
+
+echo "----------------------------------------------------------"
+echo
