@@ -1,31 +1,26 @@
 #!/usr/bin/env python
 
 
+import re
 import sys
-import base64
-import hmac
-import hashlib
 import getopt
-import datetime
 import json
 from pathlib import Path
-from typing import Tuple
 from shutil import which
 import requests
 
 
 class Mailer():
     def __init__(self):
+        self.mail_sender = "terzeron@terzeron.com"
+        self.mail_sender_name = "조영일"
+
         program_full_path = which(sys.argv[0])
         if program_full_path:
             conf_file_path = Path(program_full_path).parent / "global_config.json"
             with conf_file_path.open("r", encoding="utf-8") as infile:
                 content = infile.read()
                 data = json.loads(content)
-                if "naver_cloud_access_key" in data and data["naver_cloud_access_key"]:
-                    self.access_key = data["naver_cloud_access_key"]
-                if "naver_cloud_secret_key" in data and data["naver_cloud_secret_key"]:
-                    self.secret_key = data["naver_cloud_secret_key"]
                 if "nhn_cloud_appkey" in data and data["nhn_cloud_appkey"]:
                     self.appkey = data["nhn_cloud_appkey"]
                 if "nhn_cloud_secretkey" in data and data["nhn_cloud_secretkey"]:
@@ -33,58 +28,39 @@ class Mailer():
                 if "mail_sender_address" in data and data["mail_sender_address"]:
                     self.sender = data["mail_sender_address"]
                 if "mail_recipient_address" in data and data["mail_recipient_address"]:
-                    self.recipient = data["mail_recipient_address"]
+                    self.recipients = [ data["mail_recipient_address"] ]
                     
-
-    def __del__(self):
-        del self.access_key
-        del self.secret_key
-        del self.sender
-        del self.recipient
-                                         
-
-    def make_signature(self) -> Tuple[str, int]:
-        space = " "  # 공백
-        new_line = "\n"  # 줄바꿈
-        method = "POST"  # HTTP 메소드
-        url = "/api/v1/mails"  # 도메인을 제외한 "/" 아래 전체 url (쿼리스트링 포함)
-        timestamp = int(datetime.datetime.now().timestamp()) * 1000
-        message = f"{method}{space}{url}{new_line}{timestamp}{new_line}{self.access_key}"
-        signing_key = hmac.new(self.secret_key.encode('UTF-8'), message.encode('UTF-8'), hashlib.sha256)
-        raw_hmac = signing_key.digest()
-        encode_base64_string = base64.b64encode(raw_hmac).decode('UTF-8')
-        return encode_base64_string, timestamp
-
-    def send_mail(self, subject, body) -> None:
-        signature, timestamp = self.make_signature()
-        url = "https://mail.apigw.ntruss.com/api/v1/mails"
+    def send_mail(self, subject, body) -> bool:
+        url = f"https://email.api.nhncloudservice.com/email/v2.0/appKeys/{self.appkey}/sender/mail"
         headers = {
-            "Content-Type": "application/json",
-            "x-ncp-apigw-timestamp": str(timestamp),
-            "x-ncp-iam-access-key": self.access_key,
-            "x-ncp-apigw-signature-v2": signature
+            "Content-Type": "application/json;charset=UTF-8",
+            "X-Secret-Key": self.secretkey
         }
+        receiver_list = []
+        for recipient in self.recipients:
+            name, address = re.split(r'[, ]+', recipient)
+            receiver_list.append({
+                "receiveMailAddr": address,
+                "receiveName": name,
+                "receiveType": "MRT0"
+            })
         payload = {
-            "senderAddress": self.sender,
-            "recipients": [
-                {
-                    "address": self.recipient,
-                    "name": "조영일",
-                    "type": "R"
-                }
-            ],
-            "individual": True,
-            "advertising": False,
+            "senderAddress": self.mail_sender,
+            "senderName": self.mail_sender_name,
             "title": subject,
-            "body": body
+            "body": body,
+            "receiverList": receiver_list
         }
         response = requests.post(url, headers=headers, data=json.dumps(payload), timeout=60)
-        if response:
-            result = json.loads(response.content)
-            if "count" in result and result["count"] > 0:
+        if response and response.status_code == 200:
+            r = json.loads(response.text)
+            if r["header"]["isSuccessful"]:
                 print("Success in sending a mail")
-        else:
-            print("Error in sending a mail")
+                return True
+
+        print("Error in sending a mail")
+        print(response.text)
+        return False
 
 
 def print_usage(program: str):
@@ -118,7 +94,8 @@ def main() -> int:
 
     mailer = Mailer()
     #print(f"subject='{subject}', body='{body}'")
-    mailer.send_mail(subject, body)
+    if not mailer.send_mail(subject, body):
+        return -1
 
     return 0
 
